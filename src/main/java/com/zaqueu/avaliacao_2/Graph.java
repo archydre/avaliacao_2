@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.zaqueu.avaliacao_2;
 
 import java.io.BufferedReader;
@@ -9,90 +5,80 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 /**
  *
  * @author zaqueu
  */
 public class Graph {
-    int qtdVertex = 0;
-    int qtdEdge = 0;
-    
+    int qtdVertex;
+    int qtdEdge;
     int[][] distance;
     int[][] adjacent;
-    
-    // gera matriz adjascente
-    public void generateAdjacentMatrix(int qtdLines, int qtdColumns, int[][] matrix){
-        this.adjacent = new int[qtdLines][qtdColumns];
+
+    /**
+     * NOVO CONSTRUTOR - Esta é a correção principal.
+     * Inicializa o grafo com um número definido de vértices.
+     * @param numVertices O número total de vértices no grafo.
+     */
+    public Graph(int numVertices) {
+        if (numVertices < 0) throw new IllegalArgumentException("O número de vértices não pode ser negativo.");
+        this.qtdVertex = numVertices;
+        this.qtdEdge = 0;
+        this.adjacent = new int[numVertices][numVertices];
+        this.distance = new int[numVertices][numVertices];
         
-        for(int i = 0; i < qtdLines; i++){
-            for(int j = 0; j < qtdColumns; j++){
-                if(matrix[i][j] > 0){
-                    adjacent[i][j] = 1;
-                }else{
-                    adjacent[i][j] = 0;
-                }
-            }
+        // Preenche a matriz de distância com um valor "infinito"
+        for (int i = 0; i < numVertices; i++) {
+            Arrays.fill(this.distance[i], Integer.MAX_VALUE);
+            this.distance[i][i] = 0; // Distância de um vértice para ele mesmo é 0
         }
     }
     
-    // contador de arestas do grafo
-    public void howManyEdges(int qtdLines, int qtdColumns){
-        int count = 0;
-        for(int i = 0; i < qtdLines; i++){
-            for(int j = 0; j < qtdColumns; j++){
-                if(i < j && adjacent[i][j] == 1)
-                    count++;
-            }
+    public void insertEdge(int v1, int v2, int weight){
+        if (v1 < 0 || v1 >= qtdVertex || v2 < 0 || v2 >= qtdVertex) {
+            System.err.println("Erro ao inserir: Vértice inválido. Vértices devem estar entre 0 e " + (qtdVertex-1));
+            return;
         }
-        
-        this.qtdEdge = count;
-    }
-    
-    public void insertEdge(int firstVertex, int secondVertex, int weight){
-        if(adjacent[firstVertex][secondVertex] == 0){
-            adjacent[firstVertex][secondVertex] = 1;
-            adjacent[secondVertex][firstVertex] = 1;
-            
-            distance[firstVertex][secondVertex] = weight;
-            distance[secondVertex][firstVertex] = weight;
-            
+        if (adjacent[v1][v2] == 0) {
+            adjacent[v1][v2] = 1;
+            adjacent[v2][v1] = 1;
+            distance[v1][v2] = weight;
+            distance[v2][v1] = weight;
             this.qtdEdge++;
         }
     }
     
-    public void removeEdge(int firstVertex, int secondVertex){
-        if(adjacent[firstVertex][secondVertex] == 1){
-            adjacent[firstVertex][secondVertex] = 0;
-            adjacent[secondVertex][firstVertex] = 0;
-            
-            distance[firstVertex][secondVertex] = Integer.MAX_VALUE;
-            distance[secondVertex][firstVertex] = Integer.MAX_VALUE;
-            
+    public void removeEdge(int v1, int v2){
+        if (v1 < 0 || v1 >= qtdVertex || v2 < 0 || v2 >= qtdVertex) {
+            System.err.println("Erro ao remover: Vértice inválido. Vértices devem estar entre 0 e " + (qtdVertex-1));
+            return;
+        }
+        if (adjacent[v1][v2] == 1) {
+            adjacent[v1][v2] = 0;
+            adjacent[v2][v1] = 0;
+            distance[v1][v2] = Integer.MAX_VALUE;
+            distance[v2][v1] = Integer.MAX_VALUE;
             this.qtdEdge--;
         }
     }
     
     public void showGraph(){
-        System.out.println("--- Informações do Grafo ---");
-        // Usa o tamanho da matriz como a fonte da verdade para a quantidade de vértices
-        this.qtdVertex = (adjacent != null) ? adjacent.length : 0;
-        
+        System.out.println("\n--- Informações do Grafo ---");
         System.out.println("Número de Vértices: " + this.qtdVertex);
         System.out.println("Número de Arestas: " + this.qtdEdge);
         System.out.println("\nLista de Adjacência (Vértice -> Vizinho(Peso)):");
-        
         if (this.qtdVertex == 0) {
             System.out.println("O grafo está vazio.");
             System.out.println("----------------------------");
             return;
         }
-
         for (int i = 0; i < this.qtdVertex; i++) {
             System.out.print(i + ": ");
             StringBuilder neighbors = new StringBuilder();
             for (int j = 0; j < this.qtdVertex; j++) {
-                if (adjacent[i][j] == 1) {
+                if (adjacent[i][j] == 1 && i != j) {
                     neighbors.append(j).append("(").append(distance[i][j]).append(") ");
                 }
             }
@@ -105,56 +91,42 @@ public class Graph {
         }
         System.out.println("----------------------------");
     }
-    
-    /**
-     * Calcula e retorna o grau de um vértice específico.
-     * O grau é o número de arestas incidentes ao vértice.
-     * @param vertex O vértice para o qual o grau será calculado.
-     * @return O grau do vértice.
-     * @throws IllegalArgumentException se o vértice for inválido.
-     */
-    public int getDegree(int vertex) {
-        if (vertex < 0 || vertex >= this.qtdVertex) {
-            throw new IllegalArgumentException("Vértice inválido: " + vertex);
-        }
-        
-        int degree = 0;
-        for (int j = 0; j < this.qtdVertex; j++) {
-            // Como adjacent[vertex][j] é 1 se houver uma aresta e 0 caso contrário,
-            // podemos simplesmente somar os valores da linha.
-            degree += adjacent[vertex][j];
-        }
-        return degree;
-    }
 
-    /**
-     * Exibe o grau de cada um dos vértices do grafo.
-     */
     public void showDegrees() {
-        System.out.println("--- Grau de Cada Vértice ---");
-        if (this.qtdVertex == 0) {
-            System.out.println("O grafo está vazio.");
-            System.out.println("----------------------------");
-            return;
-        }
-
+        System.out.println("\n--- Grau de Cada Vértice ---");
         for (int i = 0; i < this.qtdVertex; i++) {
             System.out.println("Grau do Vértice " + i + ": " + getDegree(i));
         }
         System.out.println("----------------------------");
     }
+
+    public int getDegree(int vertex) {
+        if (vertex < 0 || vertex >= this.qtdVertex) {
+            throw new IllegalArgumentException("Vértice inválido: " + vertex + ". Válidos de 0 a " + (qtdVertex-1));
+        }
+        int degree = 0;
+        for (int j = 0; j < this.qtdVertex; j++) {
+             if(adjacent[vertex][j] == 1 && vertex != j) {
+                degree++;
+            }
+        }
+        return degree;
+    }
     
-     public static Graph fromFile(String filePath) {
-        Graph graph = null;
-        // 1. Usamos a classe Paths para obter um objeto Path a partir da String do caminho.
+    public static Graph fromFile(String filePath) {
+        Graph graph;
         Path path = Paths.get(filePath);
 
-        // 2. O try-with-resources agora usa Files.newBufferedReader(path).
+        if (!Files.exists(path)) {
+            System.err.println("Erro: Arquivo não encontrado em '" + filePath + "'");
+            return null;
+        }
+
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            // A lógica interna de leitura permanece exatamente a mesma.
             String line = reader.readLine();
             int numVertices = Integer.parseInt(line.trim());
-
+            
+            // Esta linha agora funciona, pois o construtor existe!
             graph = new Graph(numVertices);
 
             for (int i = 0; i < numVertices; i++) {
@@ -171,13 +143,10 @@ public class Graph {
                     }
                 }
             }
-
-        } catch (IOException | NumberFormatException e) {
+        } catch (IOException | NumberFormatException | ArrayIndexOutOfBoundsException e) {
             System.err.println("Erro ao ler ou processar o arquivo do grafo: " + e.getMessage());
-            e.printStackTrace();
             return null;
         }
-        
         return graph;
     }
 }
